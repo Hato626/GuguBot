@@ -15,3 +15,14 @@ channel.author("帝王圣鸽")
 channel.description("一个存储色图的工具")
 
 
+@channel.use(ListenerSchema(listening_events=[GroupMessage]))
+async def group_message_listener(
+    app: Ariadne,
+    message: MessageChain,
+    sender: Member,
+    group: Group
+):
+    pass
+        
+
+

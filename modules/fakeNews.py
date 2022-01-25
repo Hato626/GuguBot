@@ -1,5 +1,3 @@
-import re
-import random
 from datetime import datetime
 
 from graia.saya import Saya, Channel
@@ -32,16 +30,31 @@ class FakeForward():
 
     async def handle(app: Ariadne, message: MessageChain, group: Group, member: Member):
         if message.asDisplay().startswith("FakeNews "):
-            content = "".join(i.text for i in message.get(Plain))[6:]
+            content = "".join(i.text for i in message.get(Plain))[9:]
             if not message.has(At):
-                return MessageChain.create([Plain(text="未指定目标！")])
-            sender = message.get(At)[0]
-            forward_nodes = [
-                ForwardNode(
-                    senderId=sender.target,
-                    time=datetime.now(),
-                    senderName=(await app.getMember(group, sender.target)).name,
-                    messageChain=MessageChain.create(Plain(text=content)),
-                )
-            ]
-            return MessageChain.create(Forward(nodeList=forward_nodes))
+                messageList = "".join(i.text for i in message.get(Plain)).split()
+                qqId = messageList[1]
+                messageStr = messageList[2]
+                try:
+                    forward_nodes = [
+                        ForwardNode(
+                            senderId=int(qqId),
+                            time=datetime.now(),
+                            #senderName=(await app.getStranger(qqId)).nickname,
+                            messageChain=MessageChain.create(Plain(text=messageStr)),
+                            )
+                        ]
+                    return MessageChain.create(Forward(nodeList=forward_nodes))
+                except:
+                    return MessageChain.create([Plain(text="未指定目标!")])
+            else:
+                sender = message.get(At)[0]
+                forward_nodes = [
+                    ForwardNode(
+                        senderId=sender.target,
+                        time=datetime.now(),
+                        senderName=(await app.getMember(group, sender.target)).name,
+                        messageChain=MessageChain.create(Plain(text=content)),
+                    )
+                ]
+                return MessageChain.create(Forward(nodeList=forward_nodes))
