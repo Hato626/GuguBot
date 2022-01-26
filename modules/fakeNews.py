@@ -38,6 +38,8 @@ async def fake_forward(app: Ariadne, message: MessageChain, group: Group, member
         if GroupMessage.asDisplay() != '等待超时，进程退出':
             result = await FakeForward.ForwardChain(app, GroupMessage, group, member)
             await app.sendGroupMessage(group, result)
+        else:
+            app.sendGroupMessage(group, GroupMessage)
 
 
 class FakeForward():
