@@ -87,10 +87,10 @@ class FakeForward():
         for i in MessageChainList:
             OneLineList = i.split(':')
             if len(OneLineList) == 2:
-                MessageChainDict[iv] = {'qqId': OneLineList[0], 'name' : await GetNameFromApi(OneLineList[0]), 'message' : OneLineList[1].replace('{otherline}', '\\n')}
+                MessageChainDict[iv] = {'qqId': OneLineList[0], 'name' : await GetNameFromApi(OneLineList[0]), 'message' : OneLineList[1].replace('{otherline}', '\n')}
             else:
                 message = i.replace(OneLineList[0] + ':', '')
-                message = message.replace('{otherline}', '\\n')
+                message = message.replace('{otherline}', '\n')
                 MessageChainDict[iv] = {'qqId': OneLineList[0], 'name' : await GetNameFromApi(OneLineList[0]), 'message' : message}
             iv = iv + 1
 
