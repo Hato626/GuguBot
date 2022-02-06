@@ -24,7 +24,7 @@ bcc = saya.broadcast
 inc = InterruptControl(bcc)
 
 channel.name("FakeForward")
-channel.author("SAGIRI-kawaii")
+channel.author("Hato")
 channel.description("一个生成转发消息的插件，发送 '/FakeNews [@目标] [内容]' 即可")
 
 
