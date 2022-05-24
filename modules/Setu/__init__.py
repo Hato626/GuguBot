@@ -119,7 +119,7 @@ async def group_message_listener(
                         num = 1
                     else:
                         num = chinese2digits(msg[requestPos1:unitPos])
-                if num > 10:num = 10
+                if num > 20:num = 20
                 
                 oneSetuPrise = 1
                 reducemoney = num * oneSetuPrise
@@ -160,6 +160,7 @@ async def group_message_listener(
                 info = json.loads(response.read().decode("utf-8"))
                 ##若tag无法获取使用keyword获取
                 if info['data'] == []:
+                    print('尝试使用keyword获取')
                     if R18_state == True:
                         response = urllib.request.urlopen("https://api.lolicon.app/setu/v2?r18=1&proxy=" + proxy + "&num=" + str(num) + "&size=" + Usetype + "&keyword=" + Keyword)
                     else:

@@ -87,7 +87,7 @@ async def group_recall_listener(
                 QuoteState = False
 
         ##发送
-        if sender.permission.value == 'MEMBER':
+        if sender.permission.value == 'MEMBER' and IsSendGroup(sender.group.id):
             if QuoteState == True:
                 MessageChainA = MessageChain.create([At(authorId),Plain("撤回了一条信息\n----------------\n")])
                 MessageChainB = MessageChain.create([Plain("引用了"),At(QuoteSenderId),Plain("的信息("),Plain(QuoteMessageId),Plain("):\n")])
@@ -125,6 +125,14 @@ async def group_message_listener(
     WriteSqlite3(message[Source][0].id, sender.id, group.id, message[Source][0].time, message.asPersistentString(), sender.name)
     
 
+
+
+def IsSendGroup(groupid):
+    group = [371815444,956162597]
+    if groupid in group:
+        return True
+    else:
+        return False
 
 def WriteSqlite3(messageId, authorId, groupId, time, message, authorName):
     connect = sqlite3.connect(os.getcwd() + '/modules/backup/backup.db')

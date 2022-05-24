@@ -39,7 +39,7 @@ async def fake_forward(app: Ariadne, message: MessageChain, group: Group, member
             result = await FakeForward.ForwardChain(app, GroupMessage, group, member)
             await app.sendGroupMessage(group, result)
         else:
-            app.sendGroupMessage(group, GroupMessage)
+            await app.sendGroupMessage(group, GroupMessage)
 
 
 class FakeForward():

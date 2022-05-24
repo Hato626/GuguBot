@@ -45,7 +45,7 @@ async def group_message_listener(
             ]))
     if message.asDisplay() == '痕币排行' or message.asDisplay() == '痕币排行榜' or message.asDisplay() == '痕币排名':
         Info = GetMoney(sender.id, 'all')
-        ThisGroupMemberList = await app.memberList(group)
+        ThisGroupMemberList = await app.getMemberList(group)
         ThisGroupMoneyInfo = {}
         for i in ThisGroupMemberList:
             if str(i.id) in Info:
