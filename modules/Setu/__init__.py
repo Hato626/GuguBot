@@ -1,3 +1,4 @@
+from sys import path
 from typing import Set
 #from graia.application.message.elements.internal import FlashImage
 from graia.saya.builtins.broadcast.schema import ListenerSchema
@@ -18,14 +19,20 @@ from graia.saya import Saya, Channel
 from pydantic.utils import KeyType
 from PIL import Image as Imagea
 from urllib.parse import quote
+from pathlib import Path
 import urllib.request
 import numpy as np
 import datetime
+import asyncio
+import aiohttp
 import sqlite3
 import random
+import time
 import json
 import ssl
 import os
+
+from regex import R
 
  
 ssl._create_default_https_context = ssl._create_unverified_context
@@ -153,6 +160,7 @@ async def group_message_listener(
                 
 
                 ##尝试使用tag获取api
+                GetUrlTime = time.time()
                 if R18_state == True:
                     response = urllib.request.urlopen("https://api.lolicon.app/setu/v2?r18=1&proxy=" + proxy + "&num=" + str(num) + "&size=" + Usetype + "&tag=" + Keyword)
                 else:
@@ -166,18 +174,31 @@ async def group_message_listener(
                     else:
                         response = urllib.request.urlopen("https://api.lolicon.app/setu/v2?r18=0&proxy=" + proxy + "&num=" + str(num) + "&size=" + Usetype + "&keyword=" + Keyword)
                     info = json.loads(response.read().decode("utf-8"))
-                print("此时从api获取链接成功")
+                print('从源站获取色图链接用时: ' + str(time.time() - GetUrlTime))
                 
                 
-
-                
-                ##缓存
-                PathLib = await getsetu(group.id,info,Usetype)
-                
-                #临时构建info
-                if KeywordStr == "Kekon" or KeywordStr == "kekon":
+                #临时构建info##如果是KK
+                if KeywordStr == "Kekon" or KeywordStr == "kekon" or KeywordStr == "血痕" or KeywordStr == "kk":
                     info = {}
-                    info["data"] = "aaaa"
+                    info["data"] = [{'urls':{Usetype:'https://api.nmsl.fun/Kekon.jpg'}}]
+                
+                if info['data'] != []:
+                    Tasks = []
+                    PathLib = []
+                    ##缓存
+                    for i in range(0,len(info['data'])):
+                        ##传入色图地址，群组id,色图质量,异步执行
+                        Task = asyncio.create_task(GetSetu(group.id, info['data'][i]['urls'][Usetype], Usetype))
+                        Tasks.append(Task)
+                        ##构建本地文件中文件列表
+                        RealPath = os.getcwd() + '/modules/Setu/setucache/' + str(info['data'][i]['urls'][Usetype].split('/')[-1])
+                        PathLib.append(RealPath)
+                    DownloadTime = time.time()
+                    await asyncio.wait(Tasks)
+                    print('下载用时: ' + str(time.time() - DownloadTime))
+                else:
+                    PathLib = []
+
                 
                 ##是否禁言
                 Muterange = 0
@@ -255,60 +276,76 @@ def AddNoise(ImgPath):
     im.save(ImgPath)
 
 
-async def getsetu(groupid,info,Usetype):
-    if groupid == 984392483:
-        if info['data'] != []:
-            PathLib = []
-            for i in range(0,len(info['data'])):
-                setuid = random.randint(0,99999)
-                realpath = os.getcwd() + '/modules/Setu/setucache/buse/' + str(setuid) + '.jpg'
-                ##获取色图
-                setuurl = 'https://acg.yanwz.cn/wallpaper/api.php'
-                print(setuurl)
-                opener = urllib.request.build_opener()
-                opener.addheaders = [('User-agent', 'Opera/9.80 (Android 2.3.4; Linux; Opera Mobi/build-1107180945; U; en-GB) Presto/2.8.149 Version/11.10')]
-                urllib.request.install_opener(opener)
-                urllib.request.urlretrieve(setuurl, realpath)   #realpath为本地保存路径
-                PathLib.append(realpath)
-                ##随机修改1像素
-                AddNoise(realpath)
-                #调用wget
-                #os.popen("wget -P " + realpath + " " + setuurl)
-                ##图片压缩
-                #print(realpath)
-                #minpath, minsize = compress_image(realpath, realpath)
-                #print(minpath, minsize)
-        else:
-            PathLib = []
-            PathLib.append("/mnt/file/SetuSql/Kekon.jpg")
-        print("此时从源站获取图片成功")
-    else:
-        # ##缓存
-        if info['data'] != []:
-            PathLib = []
-            for i in range(0,len(info['data'])):
-                realpath = os.getcwd() + '/modules/Setu/setucache/' + info['data'][i]['urls'][Usetype].split('/')[-1]
-                ##获取色图
-                setuurl = info['data'][i]['urls'][Usetype]
-                print(setuurl)
-                opener = urllib.request.build_opener()
-                opener.addheaders = [('User-agent', 'Opera/9.80 (Android 2.3.4; Linux; Opera Mobi/build-1107180945; U; en-GB) Presto/2.8.149 Version/11.10')]
-                urllib.request.install_opener(opener)
-                urllib.request.urlretrieve(setuurl, realpath)   #realpath为本地保存路径
-                PathLib.append(realpath)
-                ##随机修改1像素
-                AddNoise(realpath)
-                #调用wget
-                #os.popen("wget -P " + realpath + " " + setuurl)
-                ##图片压缩
-                #print(realpath)
-                #minpath, minsize = compress_image(realpath, realpath)
-                #print(minpath, minsize)
-        else:
-            PathLib = []
-            PathLib.append("/mnt/file/SetuSql/Kekon.jpg")
-        print("此时从源站获取图片成功")
-    return PathLib
+
+
+async def GetSetu(groupid, SetuUrl, Usetype):
+    async with aiohttp.ClientSession(headers=[('User-agent', 'Opera/9.80 (Android 2.3.4; Linux; Opera Mobi/build-1107180945; U; en-GB) Presto/2.8.149 Version/11.10')]) as session:
+        async with session.get(SetuUrl) as r:
+            pic = await r.read()
+            await SaveSetu(pic, SetuUrl.split('/')[-1])
+            return os.getcwd() + '/modules/Setu/setucache/' + SetuUrl.split('/')[-1]
+
+async def SaveSetu(pic, path):
+    Path(os.getcwd() + '/modules/Setu/setucache/' + path).write_bytes(pic)
+    AddNoise(os.getcwd() + '/modules/Setu/setucache/' + path)
+
+
+
+
+# async def getsetu(groupid,info,Usetype):
+#     if groupid == 984392483:
+#         if info['data'] != []:
+#             PathLib = []
+#             for i in range(0,len(info['data'])):
+#                 setuid = random.randint(0,99999)
+#                 realpath = os.getcwd() + '/modules/Setu/setucache/buse/' + str(setuid) + '.jpg'
+#                 ##获取色图
+#                 setuurl = 'https://acg.yanwz.cn/wallpaper/api.php'
+#                 print(setuurl)
+#                 opener = urllib.request.build_opener()
+#                 opener.addheaders = [('User-agent', 'Opera/9.80 (Android 2.3.4; Linux; Opera Mobi/build-1107180945; U; en-GB) Presto/2.8.149 Version/11.10')]
+#                 urllib.request.install_opener(opener)
+#                 urllib.request.urlretrieve(setuurl, realpath)   #realpath为本地保存路径
+#                 PathLib.append(realpath)
+#                 ##随机修改1像素
+#                 AddNoise(realpath)
+#                 #调用wget
+#                 #os.popen("wget -P " + realpath + " " + setuurl)
+#                 ##图片压缩
+#                 #print(realpath)
+#                 #minpath, minsize = compress_image(realpath, realpath)
+#                 #print(minpath, minsize)
+#         else:
+#             PathLib = []
+#             PathLib.append("/mnt/file/SetuSql/Kekon.jpg")
+#         print("此时从源站获取图片成功")
+#     else:
+#         # ##缓存
+#         if info['data'] != []:
+#             PathLib = []
+#             for i in range(0,len(info['data'])):
+#                 realpath = os.getcwd() + '/modules/Setu/setucache/' + info['data'][i]['urls'][Usetype].split('/')[-1]
+#                 ##获取色图
+#                 setuurl = info['data'][i]['urls'][Usetype]
+#                 print(setuurl)
+#                 opener = urllib.request.build_opener()
+#                 opener.addheaders = [('User-agent', 'Opera/9.80 (Android 2.3.4; Linux; Opera Mobi/build-1107180945; U; en-GB) Presto/2.8.149 Version/11.10')]
+#                 urllib.request.install_opener(opener)
+#                 urllib.request.urlretrieve(setuurl, realpath)   #realpath为本地保存路径
+#                 PathLib.append(realpath)
+#                 ##随机修改1像素
+#                 AddNoise(realpath)
+#                 #调用wget
+#                 #os.popen("wget -P " + realpath + " " + setuurl)
+#                 ##图片压缩
+#                 #print(realpath)
+#                 #minpath, minsize = compress_image(realpath, realpath)
+#                 #print(minpath, minsize)
+#         else:
+#             PathLib = []
+#             PathLib.append("/mnt/file/SetuSql/Kekon.jpg")
+#         print("此时从源站获取图片成功")
+#     return PathLib
 
 # 把汉字变为阿拉伯数字
 def chinese2digits(chinese_str):

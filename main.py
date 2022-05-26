@@ -8,12 +8,17 @@ from graia.ariadne.app import Ariadne
 from graia.ariadne.model import Friend, MiraiSession
 import asyncio
 
+from graia.scheduler.saya import GraiaSchedulerBehaviour, SchedulerSchema
+from graia.scheduler import GraiaScheduler
 from utils import load_config
 
 loop = asyncio.get_event_loop()
 bcc = Broadcast(loop=loop)
 saya = Saya(bcc)
 saya.install_behaviours(BroadcastBehaviour(bcc))
+
+scheduler = GraiaScheduler(loop=bcc.loop, broadcast=bcc)
+saya.install_behaviours(GraiaSchedulerBehaviour(scheduler))
 
 configs = load_config()
 
