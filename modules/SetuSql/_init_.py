@@ -23,6 +23,5 @@ async def group_message_listener(
     group: Group
 ):
     pass
-        
 
 
